@@ -1,0 +1,166 @@
+#!/bin/sh
+
+meself="${0}"
+
+run_term () {
+    FZF_PROMPT="--prompt='filter: '"
+    FZF_HEADER="--header 'BookMarks'"
+    FZF_MENU_OPTS="--layout=reverse --height 100% \
+                   --cycle --preview-window sharp --preview-window 40%"
+
+    . ~/.config/shell/fzf-colors
+
+    FZF_BINDS="--bind='alt-k:preview-up,alt-j:preview-down,pgdn:half-page-down,pgup:half-page-up'"
+
+    export FZF_DEFAULT_OPTS="${FZF_MENU_OPTS} ${FZF_COLORS} ${FZF_BINDS} ${FZF_PROMPT} ${FZF_HEADER}"
+
+    FLOATING_TERMINAL='uxterm -name FZFmenu -T FZFmenu -fs 12 '
+
+
+    GEOMETRY=' -geometry 120x25 '
+
+    EXEC_FLAG=' -e '
+
+    exec $FLOATING_TERMINAL $GEOMETRY $EXEC_FLAG $meself sel
+}
+
+# Usage: lstrip "string" "pattern"
+lstrip() {
+    # shellcheck disable=SC2295
+    printf '%s\n' "${1##$2}"
+}
+
+# Usage: rstrip "string" "pattern"
+rstrip() {
+    # shellcheck disable=SC2295
+    printf '%s\n' "${1%%$2}"
+}
+
+run_chooser () {
+    browser=$(xdg-settings get default-web-browser \
+        | sed 's/\.desktop//; s/-browser//')
+
+    chrome_browser=""
+    firefox_browser=""
+    browser_type=""
+
+    case "$browser" in
+        "brave")
+            chrome_browser="BraveSoftware/Brave-Browser"
+            browser_type="chrome"
+            ;;
+        "chromium")
+            chrome_browser="chromium"
+            browser_type="chrome"
+            ;;
+        "google"|"google-chrome"|"chrome") 
+            chrome_browser="google-chrome"
+            browser_type="chrome"
+            ;;
+        "firefox")
+            firefox_browser="mozilla/firefox"
+            browser_type="firefox"
+            ;;
+        "librewolf")
+            firefox_browser="mozilla/firefox"
+            browser_type="firefox"
+            ;;
+    esac
+
+    chrome_bookmarks="${HOME}/.config/${chrome_browser}/Default/Bookmarks"
+    firefox_bookmarks="${HOME}/.${firefox_browser}/*.default/places.sqlite"
+
+
+    process_chrome_bm () {
+        cat "$chrome_bookmarks" | \
+        grep -E '\"name|\"url' | \
+        grep -vE '\"type\"\:' | \
+        awk '{print $1 substr($0,index($0,$2))}' | \
+        sed s'/^\"name\"\:/title \= /' | \
+        sed s'/^\"url\"\:/url \= /' | \
+        sed s'/\,$//' | \
+        awk 'BEGIN { 
+                title="";
+                re=""
+            }
+            { 
+                if ( $1 ~ /^url/) { 
+                re=re""title"  "$0"\n";
+                } else if ( $1 ~ /^title/ ) { 
+                    title=$0"\n"; 
+                }
+            } 
+            END { 
+                print re;
+            }' | \
+        awk '
+            {
+                gsub(/title = /,""); gsub(/  url = /,""); print $0
+            }
+            ' | \
+        awk '{ ORS = (NR%2 ? "::::" : RS) } 1' | sed 's/^::::$//'
+    }
+
+    process_firefox_bm () {
+        cat "$firefox_bookmarks"
+    }
+
+    print_all_bookmarks () {
+        case "$browser_type" in
+            chrome)
+                process_chrome_bm
+                ;;
+            firefox)
+                process_firefox_bm
+                ;;
+        esac
+
+    }
+
+    chooser () {
+        print_all_bookmarks | fzf --cycle --preview "$meself p {}" | awk -F"::::" '{print $2}'
+    }
+
+    selection="$(chooser)"
+
+    if [ -n "$selection" ]; then
+        selection=$(lstrip "$selection" '"')
+        selection=$(rstrip "$selection" '"')
+        notify-send "Opening" "$selection"
+        xdg-open "$selection" > /dev/null
+        exit 0
+    else
+        notify-send "No bookmark chosen"
+        exit 1
+    fi
+}
+
+run_previewer () {
+    string="$1"
+    title=$(printf '%s' "$string" | awk -F"::::" '{print $1}')
+    title=$(lstrip "$title" '"')
+    title=$(rstrip "$title" '"')
+    url=$(printf '%s' "$string" | awk -F"::::" '{print $2}')
+    url=$(lstrip "$url" '"')
+    url=$(rstrip "$url" '"')
+    pcols=20
+    if [ -n "$FZF_PREVIEW_COLUMNS" ]; then
+        pcols="$FZF_PREVIEW_COLUMNS"
+        # pcols=$(( pcols - 2 ))
+    fi
+    printf '%s\n' "$title" | fold -w "$pcols" -s
+    printf '\n%s\n' "$url" | fold -w "$pcols"
+}
+
+if [ "$#" -gt 0 ]; then
+    case "$1" in
+        sel|choose)
+            run_chooser
+            ;;
+        p|preview)
+            run_previewer "$2"
+            ;;
+    esac
+else
+    run_term
+fi
