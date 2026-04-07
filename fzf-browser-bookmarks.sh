@@ -10,14 +10,25 @@ run_term () {
 
     FZF_BINDS="--bind='alt-k:preview-up,alt-j:preview-down,pgdn:half-page-down,pgup:half-page-up'"
 
-    export FZF_DEFAULT_OPTS="${FZF_MENU_OPTS} ${FZF_COLORS} ${FZF_BINDS} ${FZF_PROMPT} ${FZF_HEADER}"
-
-    FLOATING_TERMINAL='x-terminal-emulator -name FZFmenu -T FZFmenu -fs 12 '
-
+    FLOATING_TERMINAL='x-terminal-emulator -name FZFmenu -T FZFmenu '
 
     GEOMETRY=' -geometry 120x25 '
 
     EXEC_FLAG=' -e '
+
+    ConfDir="${XDG_CONFIG_HOME:-${HOME}/.config}/@NAME@"
+    if [ ! -d "$ConfDir" ]; then
+        mkdir -p "$ConfDir"
+    fi
+    DefConf="@DOC@/configrc"
+    CONFIG="${ConfDir}/configrc"
+    if [ ! -r "$CONFIG" ]; then
+        cp "$DefConf" "$CONFIG"
+    fi
+
+    . "$CONFIG"
+
+    export FZF_DEFAULT_OPTS="${FZF_MENU_OPTS} ${FZF_COLORS} ${FZF_BINDS} ${FZF_PROMPT} ${FZF_HEADER}"
 
     exec $FLOATING_TERMINAL $GEOMETRY $EXEC_FLAG $meself sel
 }
