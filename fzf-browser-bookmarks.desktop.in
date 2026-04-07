@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Browser Bookmark Search
+GenericName=Browser Bookmark Search
+Comment=Web Browser bookmark search built with fzf
+Icon=bookreader
+Exec=@NAME@
+TryExec=@NAME@
+Terminal=false
+Categories=Utility;ConsoleOnly;

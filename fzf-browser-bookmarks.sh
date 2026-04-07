@@ -8,8 +8,6 @@ run_term () {
     FZF_MENU_OPTS="--layout=reverse --height 100% \
                    --cycle --preview-window sharp --preview-window 40%"
 
-    . ~/.config/shell/fzf-colors
-
     FZF_BINDS="--bind='alt-k:preview-up,alt-j:preview-down,pgdn:half-page-down,pgup:half-page-up'"
 
     export FZF_DEFAULT_OPTS="${FZF_MENU_OPTS} ${FZF_COLORS} ${FZF_BINDS} ${FZF_PROMPT} ${FZF_HEADER}"
