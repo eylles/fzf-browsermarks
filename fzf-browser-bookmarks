@@ -14,7 +14,7 @@ run_term () {
 
     export FZF_DEFAULT_OPTS="${FZF_MENU_OPTS} ${FZF_COLORS} ${FZF_BINDS} ${FZF_PROMPT} ${FZF_HEADER}"
 
-    FLOATING_TERMINAL='uxterm -name FZFmenu -T FZFmenu -fs 12 '
+    FLOATING_TERMINAL='x-terminal-emulator -name FZFmenu -T FZFmenu -fs 12 '
 
 
     GEOMETRY=' -geometry 120x25 '
